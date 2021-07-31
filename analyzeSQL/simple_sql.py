@@ -1,3 +1,7 @@
+
+
+sql_grammar = """
+
 start: overall_expr -> final
 
 overall_expr: with_subquery_cascade* set_expr
@@ -31,7 +35,7 @@ groupby_expr: expression -> group_by
 
 window_expr: [window_expr ","] _window_name "AS"i ( window_definition )
 
-from_item: name [ [ "AS"i ] alias ] -> table
+from_item: name ["." name] [ [ "AS"i ] alias ] -> table
             | join -> join
             | cross_join -> cross_join_expression
             | subquery
@@ -166,3 +170,6 @@ name: CNAME | ESCAPED_STRING
 %import common.NUMBER
 %import common.WS
 %ignore WS
+
+"""
+
