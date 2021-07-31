@@ -10,6 +10,7 @@ class SqlParserTest(TestCase):
 		from prod.foo a
 		inner join dev.bar b
 		on a.id = b.id
+		where a.x = 12
 		"""
 		sql_parser = SqlParser().get_parser("simple_sql")
 		p = sql_parser.parse
