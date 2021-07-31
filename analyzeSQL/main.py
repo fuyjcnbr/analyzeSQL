@@ -4,6 +4,8 @@ from lark import Lark, Transformer, v_args, Tree, Token
 # from simple_sql import sql_grammar as simple_sql_grammar
 import analyzeSQL.simple_sql3 as simple_sql
 
+import json
+
 class SqlParser:
 	available_sql_grammars = {"simple_sql"}
 
@@ -82,36 +84,109 @@ class SimplifySimpleSqlTree(Transformer):
 
 
 class SimplifySimpleSqlTree2(Transformer):
-	dict = {}
+	# dict = {}
+	#
+	# def get_dict(self):
+	# 	return self.dict
+	#
+	# def reset_dict(self):
+	# 	self.dict = {}
 
-	def get_dict(self):
-		return self.dict
 
-	def reset_dict(self):
-		self.dict = {}
-
-
-	def STAR(self, li):
-		return ("star", "__all__")
+	def star(self, li):
+		return {"star": "__all__"}
+		# return "__all__"
 
 	def name(self, li):
-		return {"name": li[0].value}
+		# return {"name": li[0].value}
+		return li[0].value
 
-	def alias_string(self, li):
-		return {"alias": li[0]["name"]}
+	# def full_name(self, li):
+	# 	li2 = list(map(lambda x: x["name"], li))
+	# 	return {"name": li2}
+
+	def bool(self, li):
+		# li2 = list(map(lambda x: x["name"], li))
+		return li
+
+	# def alias_string(self, li):
+	# 	return {"alias": li[0]["name"]}
+
+	def column_name(self, li):
+		d = {}
+		d["column_name"] = li[-1]
+		if len(li) > 1:
+			d["column_table_alias"] = li[0]
+		else:
+			d["column_table_alias"] = None
+		return d
+
+	def column_line(self, li):
+		d = li[0]
+		if len(li) > 1:
+			d["column_alias"] = li[1]
+		return d
+
+	def select_column_list(self, li):
+		return {"columns": [x for sublist in li for x in sublist]}
+
+	def from_clause(self, li):
+		li2 = list(filter(lambda x: x != [], li))
+		return {"tables": li2}
+
+	def select_clause(self, li):
+		li1 = list(filter(lambda x: "columns" in x.keys(), li))
+		li2 = list(filter(lambda x: "tables" in x.keys(), li))
+		return {"columns": li1[0]["columns"], "tables": li2[0]["tables"]}
+
+	def table_name(self, li):
+		d = {}
+		d["table_name"] = li[-1]
+		if len(li) > 1:
+			d["table_schema_name"] = li[0]
+		else:
+			d["table_schema_name"] = None
+		return d
+
+	# def query(self, li):
+	# 	# print(f"query li = {li}")
+	# 	# d = li[0]
+	# 	# if len(li) > 1:
+	# 	# 	d["subquery_alias"] = li[-1]
+	# 	# else:
+	# 	# 	d["subquery_alias"] = None
+	#
+	# 	return {"subqueries": li}
+	# 	# return d
+	#
+	# def from_line(self, li):
+	# 	print(f"from_line li = {li}")
+	# 	d = li[0]
+	# 	if len(li) > 1:
+	# 		d["table_alias"] = li[-1]
+	# 	else:
+	# 		d["table_alias"] = None
+	# 	return d
+	#
+	def overall_expr(self, li):
+		return li[0]
+
+	def final(self, li):
+		return li[0]
 
 	# def column_name(self, li):
-	# 	# d = {}
-	# 	# li2 = list(map(lambda x: x[1], filter(lambda x: x[0] == "alias" ,li)))
-	# 	# if len(li2) > 0:
-	# 	# 	d["column_alias"] = li2[0]
-	# 	#
-	# 	# li3 = list(map(lambda x: x[1], filter(lambda x: x[0] != "alias" ,li)))
-	# 	# d["column_name"] = li3[-1]
-	# 	# if len(li3) == 2:
-	# 	# 	d["column_table_alias"] = li3[0]
-	# 	li2 = list(map(lambda x: x["name"], li))
-	# 	return {"column": ".".join(li2)}
+	# 	d = {}
+	# 	li2 = list(map(lambda x: x[1], filter(lambda x: x[0] == "alias" ,li)))
+	# 	if len(li2) > 0:
+	# 		d["column_alias"] = li2[0]
+	#
+	# 	li3 = list(map(lambda x: x[1], filter(lambda x: x[0] != "alias" ,li)))
+	# 	d["column_name"] = li3[-1]
+	# 	if len(li3) == 2:
+	# 		d["column_table_alias"] = li3[0]
+	# 	return d
+		# li2 = list(map(lambda x: x["name"], li))
+		# return {"column": ".".join(li2)}
 
 	# def table(self, li):
 	# 	d = {}
@@ -123,10 +198,10 @@ class SimplifySimpleSqlTree2(Transformer):
 	# 			d["table_alias"] = x[1]
 	# 	d["table_name"] = ".".join(li2)
 	# 	return d
-	#
-	# def __default__(self, data, children, meta):
-	# 	return children
-	#
+
+	def __default__(self, data, children, meta):
+		return children
+
 	# def where_expr(self, li):
 	# 	return ("where_expr", li)
 	#
@@ -154,7 +229,7 @@ if __name__ == "__main__":
 	select *
 	from t
 	left outer join (
-		select dg
+		select dg as aso
 		from dgf
 	) b
 	on t.sdf = b.fgh
@@ -162,8 +237,15 @@ if __name__ == "__main__":
 	sql_parser = SqlParser().get_parser("simple_sql")
 	p = sql_parser.parse
 	tree = p(sql)
-	# tree2 = SimplifySimpleSqlTree2().transform(tree)
-	print(f"tree2 = {tree}")
+	print(f"tree = {tree}")
+	tree2 = SimplifySimpleSqlTree2().transform(tree)
+	print(f"tree2 = {tree2}")
+	print(f"type(tree2) = {type(tree2)}")
+	j = json.dumps(tree2, indent=4)
+	print(f"j = {j}")
+
+
+
 
 
 

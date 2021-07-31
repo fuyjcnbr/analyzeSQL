@@ -78,7 +78,7 @@ select_clause: "SELECT"i select_column_list [from_clause] [where_clause] [group_
 from_clause: "FROM"i from_line [ ("," from_line)* ] 
 	| "FROM"i from_line [ (join_keyword from_line "ON"i bool)* ]
 
-from_line: (full_name | "(" query ")") [name]
+from_line: (table_name | "(" query ")") [name]
 
 join_keyword: ["INNER"i | (("LEFT"i | "RIGHT"i | "FULL"i) ["OUTER"i])] "JOIN"i
 
@@ -114,11 +114,14 @@ column_line: bool [["AS"i] name] | star
 
 ?column_atom: NUMBER           -> number
      | "-" column_atom         -> neg
-     | full_name
+     | column_name
      | "(" sum ")"
 
 
-full_name: [name "."] name
+table_name: [name "."] name
+column_name: [name "."] name
+
+
 star: [name "."] "*"
 
 
