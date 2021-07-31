@@ -67,21 +67,22 @@ start: overall_expr -> final
 overall_expr: query
 
 
-query: select_clause
-    | select_clause [ ("UNION"i ["ALL"i] select_clause)* ]
-	| "WITH"i name "AS"i "(" query ")" [ ("," name "AS"i "(" query ")")] query
-
+?query: select_clause
+    | query "UNION"i ["ALL"i] query  -> union_clause
+	| "WITH"i name "AS"i "(" query ")" [ ("," name "AS"i "(" query ")")] query -> with_clause
 
 select_clause: "SELECT"i select_column_list [from_clause] [where_clause] [group_by_clause] [order_by_clause] [limit_clause]
 
+from_clause: "FROM"i from_line [ ("," from_line)* ]
+	| "FROM"i from_line [ (join_keyword from_line join_condition)* ]
 
-from_clause: "FROM"i from_line [ ("," from_line)* ] 
-	| "FROM"i from_line [ (join_keyword from_line "ON"i bool)* ]
-
-from_line: (table_name | "(" query ")") [name]
+from_line: table_name [name]
+	| "(" query ")" [name]
 
 join_keyword: ["INNER"i | (("LEFT"i | "RIGHT"i | "FULL"i) ["OUTER"i])] "JOIN"i
 
+
+join_condition: "ON"i bool
 
 where_clause: "WHERE"i bool
 
@@ -97,9 +98,9 @@ column_line: bool [["AS"i] name] | star
 
 
 ?bool: sum
-    | bool "AND"i bool   -> and
-    | bool "OR"i bool   -> or
-    | "NOT"i bool   -> not
+    | bool "AND"i bool
+    | bool "OR"i bool
+    | "NOT"i bool
     | bool "=" bool
     | bool "!=" bool
     | bool ">" bool
@@ -115,7 +116,7 @@ column_line: bool [["AS"i] name] | star
 ?column_atom: NUMBER           -> number
      | "-" column_atom         -> neg
      | column_name
-     | "(" sum ")"
+     | "(" bool ")"
 
 
 table_name: [name "."] name

@@ -94,7 +94,7 @@ class SimplifySimpleSqlTree2(Transformer):
 
 
 	def star(self, li):
-		return {"star": "__all__"}
+		return [{"star": "__all__"}]
 		# return "__all__"
 
 	def name(self, li):
@@ -106,47 +106,126 @@ class SimplifySimpleSqlTree2(Transformer):
 	# 	return {"name": li2}
 
 	def bool(self, li):
+		print(f"bool li = {li}")
 		# li2 = list(map(lambda x: x["name"], li))
 		return li
+
+	# def where_clause(self, li):
+	# 	# li2 = list(map(lambda x: x["name"], li))
+	# 	return li[0]
 
 	# def alias_string(self, li):
 	# 	return {"alias": li[0]["name"]}
 
 	def column_name(self, li):
+		print(f"column_name li = {li}")
 		d = {}
 		d["column_name"] = li[-1]
 		if len(li) > 1:
-			d["column_table_alias"] = li[0]
+			d["column_source_table_alias"] = li[0]
 		else:
-			d["column_table_alias"] = None
+			d["column_source_table_alias"] = None
+		print(f"column_name d = {d}")
 		return d
 
 	def column_line(self, li):
-		d = li[0]
+		print(f"column_line li = {li}")
+		if type(li[0]) == list:
+			fst = li[0]
+		else:
+			fst = [li[0]]
+		# d = {"columns": li[0]}
+		# if len(li) > 1:
+		# 	d["line_alias"] = li[1]
+		# else:
+		# 	d["line_alias"] = None
 		if len(li) > 1:
-			d["column_alias"] = li[1]
-		return d
+			alias = li[1]
+		else:
+			alias = None
+		def f(x, alias):
+			y = x
+			y["column_outer_alias"] = alias
+			return y
+		li2 = list(map(lambda x: f(x, alias), fst))
+		print(f"column_line li2 = {li2}")
+		return li2
 
 	def select_column_list(self, li):
-		return {"columns": [x for sublist in li for x in sublist]}
+		print(f"select_column_list li = {li}")
+		li2 = [x for sublist in li for x in sublist]
+		# print(f"select_column_list li2 = {li2}")
+		# return {"select columns": li2}
+		# return {"lines": li}
+		print(f"select_column_list li2 = {li2}")
+		return {"columns": li2}
+
+	def from_line(self, li):
+		print(f"from_line li = {li}")
+		d = li[0] #{"table": li[0]}
+		if len(li) > 1:
+			d["table_alias"] = li[1]
+		else:
+			d["table_alias"] = None
+		# if len(li) > 1:
+		# 	alias = li[1]
+		# else:
+		# 	alias = None
+		# def f(x, alias):
+		# 	y = x
+		# 	y["table_alias"] = alias
+		# 	return y
+		# li2 = list(map(lambda x: f(x, alias), li[0]))
+		# print(f"from_line li2 = {li2}")
+		print(f"from_line d = {d}")
+		return d
 
 	def from_clause(self, li):
+		print(f"from_clause li = {li}")
 		li2 = list(filter(lambda x: x != [], li))
+		print(f"from_clause li2 = {li2}")
 		return {"tables": li2}
 
 	def select_clause(self, li):
+		print(f"select_clause li = {li}")
 		li1 = list(filter(lambda x: "columns" in x.keys(), li))
 		li2 = list(filter(lambda x: "tables" in x.keys(), li))
+		# li3 = list(filter(lambda x: len( {"tables","columns"}.intersection(x.keys()) ) == 0, li))
+		# return {"columns": li1[0]["columns"], "tables": li2[0]["tables"], "other": li3}
 		return {"columns": li1[0]["columns"], "tables": li2[0]["tables"]}
 
 	def table_name(self, li):
+		print(f"table_name li = {li}")
 		d = {}
 		d["table_name"] = li[-1]
 		if len(li) > 1:
 			d["table_schema_name"] = li[0]
 		else:
 			d["table_schema_name"] = None
+		print(f"table_name d = {d}")
 		return d
+
+
+	def where_clause(self, li):
+		print(f"where_clause li = {li}")
+		return {"where": li}
+
+	def join_condition(self, li):
+		print(f"join_condition li = {li}")
+		return {"join": li}
+
+	def query(self, li):
+		print(f"query li = {li}")
+		return li
+
+
+	# def bool_and(self, li):
+	# 	print(f"bool_and li = {li}")
+	# 	return li
+	#
+	# def bool_or(self, li):
+	# 	print(f"bool_or li = {li}")
+	# 	return li
 
 	# def query(self, li):
 	# 	# print(f"query li = {li}")
@@ -218,6 +297,30 @@ class SimplifySimpleSqlTree2(Transformer):
 
 
 
+def get_all_tables(tree):
+	if type(tree) == list:
+		se = set()
+		for x in tree:
+			se = se.union(get_all_tables(x))
+		return se
+	elif type(tree) == dict:
+		if "table_name" in tree.keys():
+			if tree["table_schema_name"] is None:
+				return {tree["table_name"]}
+			else:
+				return {tree["table_schema_name"] + "." + tree["table_name"]}
+		elif "tables" in tree.keys():
+			se = set()
+			for x in tree["tables"]:
+				se = se.union(get_all_tables(x))
+			return se
+		else:
+			return set()
+	else:
+		return set()
+
+
+
 
 
 
@@ -234,6 +337,7 @@ if __name__ == "__main__":
 	) b
 	on t.sdf = b.fgh
 	"""
+
 	sql_parser = SqlParser().get_parser("simple_sql")
 	p = sql_parser.parse
 	tree = p(sql)
@@ -244,6 +348,8 @@ if __name__ == "__main__":
 	j = json.dumps(tree2, indent=4)
 	print(f"j = {j}")
 
+	tables = get_all_tables(tree2)
+	print(f"tables = {tables}")
 
 
 
