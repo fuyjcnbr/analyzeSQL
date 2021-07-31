@@ -1,5 +1,5 @@
 from unittest import TestCase, main
-from analyzeSQL.main import SqlParser
+from analyzeSQL.main import SqlParser, SimplifySimpleSqlTree
 from lark import Lark, Transformer, v_args, Tree, Token
 
 class SqlParserTest(TestCase):
@@ -14,7 +14,8 @@ class SqlParserTest(TestCase):
 		sql_parser = SqlParser().get_parser("simple_sql")
 		p = sql_parser.parse
 		tree = p(sql)
-		self.assertEqual(Tree("hz", []), tree)
+		tree2 = SimplifySimpleSqlTree().transform(tree)
+		self.assertEqual(Tree("hz", []), tree2)
 
 if __name__ == "__main__":
 	main()
