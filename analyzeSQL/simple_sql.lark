@@ -1,4 +1,10 @@
-start: set_expr -> final
+start: overall_expr -> final
+
+overall_expr: with_subquery_cascade* set_expr
+
+with_subquery_cascade: "WITH"i with_subquery [ ("," set_expr )* ]
+
+with_subquery: alias "AS"i "(" set_expr ")"
 
 set_expr: query_expr
         | set_expr "UNION"i ["DISTINCT"i] set_expr -> union_distinct
