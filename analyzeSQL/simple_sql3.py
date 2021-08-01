@@ -98,23 +98,23 @@ column_line: bool [["AS"i] name] | star
 
 
 ?bool: sum
-    | bool "AND"i bool
-    | bool "OR"i bool
-    | "NOT"i bool
-    | bool "=" bool
-    | bool "!=" bool
-    | bool ">" bool
+    | bool "AND"i bool -> bool_and
+    | bool "OR"i bool -> bool_or
+    | "NOT"i bool -> bool_not
+    | bool "=" bool -> bool_equal
+    | bool "!=" bool -> bool_non_equal
+    | bool ">" bool -> bool_more
 
 ?sum: product
-    | sum "+" product   -> add
-    | sum "-" product   -> sub
+    | sum "+" product   -> math_add
+    | sum "-" product   -> math_sub
 
 ?product: column_atom
-    | product "*" column_atom  -> mul
-    | product "/" column_atom  -> div
+    | product "*" column_atom  -> math_mul
+    | product "/" column_atom  -> math_div
 
 ?column_atom: NUMBER           -> number
-     | "-" column_atom         -> neg
+     | "-" column_atom         -> math_neg
      | column_name
      | "(" bool ")"
 
