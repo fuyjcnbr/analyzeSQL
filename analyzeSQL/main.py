@@ -413,20 +413,28 @@ class SimplifySimpleSqlTree(Transformer):
 
 
 class GetAllTables(Visitor):
-	res = set()
+	source = set()
+	target = None
 
 	def get(self):
-		return self.res
+		return (self.target, self.source)
 
 	# def table(self, tree):
 	# 	print(f"GetAllTables table tree = {tree}")
 	# 	if type(tree.children[0]) == Table:
 	# 		self.res.add(tree.children[0])
 
+
+	def insert_clause(self, tree):
+		print(f"GetAllTables insert_clause tree = {tree}")
+		for x in tree.children:
+			if type(x) == Table:
+				self.target = x
+
 	def __default__(self, tree):
 		for x in tree.children:
 			if type(x) == Table:
-				self.res.add(x)
+				self.source.add(x)
 
 def get_all_tables(tree):
 	v = GetAllTables()
@@ -463,6 +471,7 @@ def get_all_tables(tree):
 
 if __name__ == "__main__":
 	sql = """
+	insert into prod.table1
 	select b.asf and fhg, d or t
 	from asd.dgfgf g
 	union all

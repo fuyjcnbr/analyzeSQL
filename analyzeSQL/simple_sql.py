@@ -4,7 +4,19 @@ sql_grammar = """
 
 start: overall_expr -> final
 
-overall_expr: query
+overall_expr: sql_code
+
+sql_code: sql_statement [ (";" sql_statement)* ]
+
+sql_statement: insert_clause | truncate_clause | delete_clause | query
+
+
+insert_clause: "INSERT"i "INTO"i table_name query
+
+truncate_clause: "TRUNCATE"i "TABLE"i table_name
+
+delete_clause: "DELETE"i "FROM"i table_name [where_clause]
+
 
 
 ?query: select_clause
