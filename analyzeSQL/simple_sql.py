@@ -40,16 +40,25 @@ where_clause: "WHERE"i bool
 
 group_by_clause: "GROUP"i "by"i  column_line [ ("," column_line)* ]
 
-order_by_clause: "ORDER"i "by"i column_line [ ("," column_line)* ]
+order_by_clause: "ORDER"i "by"i column_name_list
 
 limit_clause: "LIMIT"i NUMBER
 
 select_column_list: column_line [ ("," column_line)* ]
 
-column_line: bool [["AS"i] name] | star
+column_line: asterisk | bool [["AS"i] name]
+
+
+
+
+
+
+column_name_list: column_name [ ("," column_name)* ]
 
 
 ?bool: sum
+    | sql_expression_in
+    | sql_expression_not_in
     | bool "AND"i bool -> bool_and
     | bool "OR"i bool -> bool_or
     | "NOT"i bool -> bool_not
@@ -65,17 +74,36 @@ column_line: bool [["AS"i] name] | star
     | product "*" column_atom  -> math_mul
     | product "/" column_atom  -> math_div
 
+
+
+
 ?column_atom: NUMBER           -> number
      | "-" column_atom         -> math_neg
      | column_name
      | "(" bool ")"
+	 
+     | "COALESCE"i "(" bool "," bool [ ("," bool)* ] ")" -> sql_coalesce
+     | "CASE"i "WHEN"i bool "THEN"i bool [ ("WHEN"i bool "THEN"i bool)* ] ["ELSE"i bool] "END"i -> sql_case
+	 | "SUM"i "(" bool ")" "OVER"i "(" "PARTITION"i "BY"i column_name_list ["ORDER"i "BY"i column_name_list] ")" -> sql_win_sum
+	 | "AVG"i "(" bool ")" "OVER"i "(" "PARTITION"i "BY"i column_name_list ["ORDER"i "BY"i column_name_list] ")" -> sql_win_avg
+	 | "SUM"i "(" bool ")" -> sql_agg_sum
+	 | "AVG"i "(" bool ")" -> sql_agg_avg
 
+sql_expression_in: bool "IN"i "(" literal [ ("," literal)* ] ")" -> sql_in
+sql_expression_not_in: bool "NOT"i "IN"i "(" literal [ ("," literal)* ] ")" -> sql_not_in
+
+?literal: boolean -> bool
+       | number_expr -> number
+       | /'([^']|\s)+'|''/ -> string
+boolean: "true"i -> true
+       | "false"i -> false
+?number_expr: product
 
 table_name: [name "."] name
 column_name: [name "."] name
 
 
-star: [name "."] "*"
+asterisk: [name "."] "*"
 
 
 name: CNAME | ESCAPED_STRING
